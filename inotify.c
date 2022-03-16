@@ -17,10 +17,10 @@ void on_error(int descriptor, const char * error_message, int close_program)
   } //end if
 } //end function
 
-static void display_inotify_event(struct inotify_event * e)
+static void display_inotify_event(struct inotify_event * e, char ** file_map)
 {
   if(e->mask & IN_CLOSE_WRITE) {
-    printf("The file %d was modified\n", e->wd);
+    printf("The file %s was modified\n", file_map[e->wd -1]);
   } //end if
 } //end function
 
@@ -28,6 +28,7 @@ int main(int argc, char * argv[])
 {
   int inotify_fd, watch;
   char buffer[BUF_LEN];
+  char * file_mapp[argc -1];
   ssize_t num_read;
   struct inotify_event * event;
   char *p;
@@ -39,6 +40,7 @@ int main(int argc, char * argv[])
   for(j=1; j < argc; j++) {
     watch = inotify_add_watch(inotify_fd, argv[j], IN_CLOSE_WRITE);
     on_error(inotify_fd, "Err when add inotify", 1);
+    file_mapp[j-1] = argv[j];
   }
 
   while(TRUE) {
@@ -47,7 +49,7 @@ int main(int argc, char * argv[])
     
     for(p=buffer; p < buffer + num_read; ) {
       event = (struct inotify_event *) p;
-      display_inotify_event(event);
+      display_inotify_event(event, file_mapp);
       p += sizeof(struct inotify_event) + event->len;
     } //end for
   } //end while
